@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PTTS</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, inital-scale=1.0" />
+    <meta name="keywords" content="HTML, CSS" />
+    <meta name="description" content="..." />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+    <style>
+        .header {
+            background-color: #fcd12a;
+            padding: 20px;
+            text-align: left;
+            font-family: fantasy;
+            letter-spacing: 2px;
+        }
+
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 50%;
+        }
+
+        img {
+            width: 150px;
+            border-radius: 10px;
+            float: left;
+            margin-right: 20px;
+        }
+
+        .footer {
+            background-color: #fcd12a;
+            padding: 15px;
+            text-align: center;
+            font-family: fantasy;
+            letter-spacing: 2px;
+        }
+
+        #map {
+            height: 500px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <img src="Final Res Logo.png" />
+        <h1 style="color: black">PUBLIC TRANSPORT TRACKING SYSTEM</h1>
+        <h2 style="color: black">by:</h2>
+    </div>
+    <h1>Map User Location</h1>
+
+    <div id="map"></div>
+
+    <br />
+    <center style="font-size: 100%" class="footer">T2 GROUP 3</center>
+
+    <script>
+        var map = L.map("map");
+
+        map.setView([10.3123, 123.9023], 15);
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "© OpenStreetMap",
+        }).addTo(map);
+
+        let marker, circle, zoomed;
+        var marker1 = L.marker([10.3123, 123.9023]).addTo(map);
+
+        navigator.geolocation.watchPosition(success, error);
+
+        function success(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const accuracy = pos.coords.accuracy;
+
+            if (marker) {
+                map.removeLayer(marker);
+                map.removeLayer(circle);
+            }
+
+            marker = L.marker([lat, lng]).addTo(map);
+            circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
+
+            if (!zoomed) {
+                zoomed = map.fitBounds(circle.getBounds());
+            }
+
+            map.setView([lat, lng]);
+        }
+
+        function error(err) {
+            if (err.code === 1) {
+                alert("Please allow geolocation access");
+            } else {
+                alert("Cannot get current location");
+            }
+        }
+        L.Control.geocoder().addTo(map);
+
+        L.Routing.control({
+            waypoints: [L.latLng(10.3123, 123.9023), L.latLng(10.35197, 123.91389)],
+        }).addTo(map);
+    </script>
+</body>
+
+</html>
