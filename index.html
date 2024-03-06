@@ -1,117 +1,223 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>PTTS</title>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, inital-scale=1.0" />
-    <meta name="keywords" content="HTML, CSS" />
-    <meta name="description" content="..." />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="keywords" content="HTML, CSS" />
+  <meta name="description" content="..." />
+  <title>PTTS</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+    crossorigin=""
+  />
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+  />
 
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"
+  />
 
-    <style>
-        .header {
-            background-color: #fcd12a;
-            padding: 20px;
-            text-align: left;
-            font-family: fantasy;
-            letter-spacing: 2px;
-        }
+  <style>
+    * {
+      font-family: "Roboto";
+    }
+    .header {
+      background-color: #fcd12a;
+      padding: 20px;
+      text-align: left;
+      letter-spacing: 2px;
+    }
+    .center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      width: 50%;
+    }
+    img {
+      width: 120px;
+      border-radius: 70px;
+      float: left;
+      margin-right: 20px;
+    }
+    .footer {
+      background-color: #fcd12a;
+      padding: 15px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    .box {
+      width: 200px;
+      height: 50px;
+      border: 1px solid black;
+      padding: 10px;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-gap: 10px;
+      justify-content: center;
+    }
 
-        .center {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            width: 50%;
-        }
-
-        img {
-            width: 150px;
-            border-radius: 10px;
-            float: left;
-            margin-right: 20px;
-        }
-
-        .footer {
-            background-color: #fcd12a;
-            padding: 15px;
-            text-align: center;
-            font-family: fantasy;
-            letter-spacing: 2px;
-        }
-
-        #map {
-            height: 500px;
-        }
-    </style>
+    #map {
+      height: 500px;
+    }
+  </style>
 </head>
 
 <body>
-    <div class="header">
-        <img src="Final Res Logo.png" />
-        <h1 style="color: black">PUBLIC TRANSPORT TRACKING SYSTEM</h1>
-        <h2 style="color: black">by:</h2>
-    </div>
-    <h1>Map User Location</h1>
-
-    <div id="map"></div>
-
+  <div class="header">
+    <img src="Final Res Logo 2.png" />
     <br />
-    <center style="font-size: 100%" class="footer">T2 GROUP 3</center>
+    <h1 style="color: black">PUBLIC TRANSPORT TRACKING SYSTEM</h1>
+    <br />
+  </div>
+  <div class="container">
+    <h2>Map User Location</h2>
+    <div class="box">
+      <h2>Distance:</h2>
+    </div>
+    <div class="box">
+      <H2 class="value" id="speed-value"></h2>
+    </div>
+    <div class="box">
+      <h2>ETA to TC:</h2>
+    </div>
+  </div>
 
-    <script>
-        var map = L.map("map");
+  <div id="map"></div>
 
-        map.setView([10.3123, 123.9023], 15);
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: "© OpenStreetMap",
-        }).addTo(map);
+  <br />
+  <center style="font-size: 100%" class="footer">T2 GROUP 3</center>
 
-        let marker, circle, zoomed;
-        var marker1 = L.marker([10.3123, 123.9023]).addTo(map);
+  <!-- JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <script type="text/javascript" src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script type="text/javascript" src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script type="module">
 
-        navigator.geolocation.watchPosition(success, error);
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+    // Initialize Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyCqLu0uu-GMz-dxNYj_q68K2HSVZxT0dcU",
+        authDomain: "research3-95ab0.firebaseapp.com",
+        databaseURL: "https://research3-95ab0-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "research3-95ab0",
+        storageBucket: "research3-95ab0.appspot.com",
+        messagingSenderId: "128869406906",
+        appId: "1:128869406906:web:b5c1e656e6d580b96c4a83",
+        measurementId: "G-525ZE0MJ6S"
+      };    
 
-        function success(pos) {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const accuracy = pos.coords.accuracy;
+    firebase.initializeApp(firebaseConfig);
 
-            if (marker) {
-                map.removeLayer(marker);
-                map.removeLayer(circle);
-            }
+    // Get a reference to the speed data in the database
+    var speedRef = firebase.database().ref('/speed');
+    var latRef = firebase.database().ref('/lat');
+    var lngRef = firebase.database().ref('/lng');
 
-            marker = L.marker([lat, lng]).addTo(map);
-            circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
+    var latJ;
+    var lngJ;
 
-            if (!zoomed) {
-                zoomed = map.fitBounds(circle.getBounds());
-            }
+    // Listen for changes in the speed data
+    speedRef.on('value', function(snapshot) {
+      var speedValue = snapshot.val();
+      // Update the HTML element that displays the speed
+      document.getElementById('speed-value').innerHTML = "Speed: " + speedValue;
+    });
 
-            map.setView([lat, lng]);
-        }
+    var map = L.map("map");
+    map.setView([10.3123, 123.9023], 15);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap",
+    }).addTo(map);
 
-        function error(err) {
-            if (err.code === 1) {
-                alert("Please allow geolocation access");
-            } else {
-                alert("Cannot get current location");
-            }
-        }
-        L.Control.geocoder().addTo(map);
+    var jeepStop = L.icon({
+      iconUrl: "bus stop logo.png",
+      iconSize: [50, 50],
+    });
 
-        L.Routing.control({
-            waypoints: [L.latLng(10.3123, 123.9023), L.latLng(10.35197, 123.91389)],
-        }).addTo(map);
-    </script>
+    let marker, circle, zoomed, jeep;
+    var marker1 = L.marker([10.3123, 123.9023]).addTo(map);
+    var marker2 = L.marker([10.31903, 123.90321], { icon: jeepStop }).addTo(
+      map
+    );
+    var marker3 = L.marker([10.32848, 123.90889], { icon: jeepStop }).addTo(
+      map
+    );
+    var marker4 = L.marker([10.33171, 123.91018], { icon: jeepStop }).addTo(
+      map
+    );
+    var marker5 = L.marker([10.33802, 123.91138], { icon: jeepStop }).addTo(
+      map
+    );
+
+    var userJeep = L.icon({
+      iconUrl: "User Jeep.png",
+      iconSize: [100, 100],
+    });
+
+    function updateLocation() {
+      navigator.geolocation.getCurrentPosition(success, error);
+    }
+    function success(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const accuracy = pos.coords.accuracy;
+
+      if (marker) {
+        map.removeLayer(marker);
+        map.removeLayer(circle);
+      }
+
+      if (jeep) {
+        map.removeLayer(jeep);
+      }
+
+      marker = L.marker([lat, lng], { icon: userJeep }).addTo(map);
+      circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
+
+      latRef.on('value', function(snapshot2) {
+        var latValue = snapshot2.val();
+        // Update the HTML element that displays the speed
+        lngRef.on('value', function(snapshot3) {
+            var lngValue = snapshot3.val();
+            // Update the HTML element that displays the speed
+            jeep = L.marker([latValue, lngValue], {icon: jeepStop}).addTo(map);
+          });
+      });
+
+      if (!zoomed) {
+        zoomed = map.fitBounds(circle.getBounds());
+      }
+
+      map.setView([lat, lng]);
+    }
+
+    function error(err) {
+      if (err.code === 1) {
+        alert("Please allow geolocation access");
+      } else {
+        alert("Cannot get current location");
+      }
+    }
+
+    setInterval(updateLocation, 1000);
+
+    L.Control.geocoder().addTo(map);
+
+    L.Routing.control({
+      waypoints: [L.latLng(10.3123, 123.9023), L.latLng(10.35197, 123.91389)],
+    }).addTo(map);
+  </script>
 </body>
-
 </html>
