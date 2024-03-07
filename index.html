@@ -80,13 +80,13 @@
   <div class="container">
     <h2>Map User Location</h2>
     <div class="box">
-      <h2>Distance:</h2>
+      <h2 id="distance-value"></h2>
     </div>
     <div class="box">
       <H2 class="value" id="speed-value"></h2>
     </div>
     <div class="box">
-      <h2>ETA to TC:</h2>
+      <h2 id="eta-value"></h2>
     </div>
   </div>
 
@@ -124,14 +124,14 @@
     var latRef = firebase.database().ref('/lat');
     var lngRef = firebase.database().ref('/lng');
 
-    var latJ;
-    var lngJ;
+    var speed;
 
     // Listen for changes in the speed data
     speedRef.on('value', function(snapshot) {
       var speedValue = snapshot.val();
       // Update the HTML element that displays the speed
-      document.getElementById('speed-value').innerHTML = "Speed: " + speedValue;
+      speed = speedValue;
+      document.getElementById('speed-value').innerHTML = "Speed: " + speed + " km/h";
     });
 
     var map = L.map("map");
@@ -146,7 +146,7 @@
       iconSize: [50, 50],
     });
 
-    let marker, circle, zoomed, jeep;
+    let jeep, jCircle, marker, circle, zoomed;
     var marker1 = L.marker([10.3123, 123.9023]).addTo(map);
     var marker2 = L.marker([10.31903, 123.90321], { icon: jeepStop }).addTo(
       map
@@ -166,6 +166,28 @@
       iconSize: [100, 100],
     });
 
+    var user = L.icon({
+      iconUrl: "person.png",
+      iconSize: [50, 50],
+    });
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // Radius of the Earth in meters
+      const φ1 = lat1 * Math.PI / 180; // Convert latitude 1 from degrees to radians
+      const φ2 = lat2 * Math.PI / 180; // Convert latitude 2 from degrees to radians
+      const Δφ = (lat2 - lat1) * Math.PI / 180; // Difference in latitude in radians
+      const Δλ = (lon2 - lon1) * Math.PI / 180; // Difference in longitude in radians
+  
+      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  
+      const d = R * c; // Distance in meters
+  
+      return d;
+  }
+
     function updateLocation() {
       navigator.geolocation.getCurrentPosition(success, error);
     }
@@ -179,12 +201,11 @@
         map.removeLayer(circle);
       }
 
-      if (jeep) {
-        map.removeLayer(jeep);
-      }
-
-      marker = L.marker([lat, lng], { icon: userJeep }).addTo(map);
+      marker = L.marker([lat, lng], {icon: user}).addTo(map);
       circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
+      var distance = (calculateDistance(marker.getLatLng().lat, marker.getLatLng().lng, 10.35197, 123.91389)/1000);
+      document.getElementById('distance-value').innerHTML = "Distance: " + distance.toFixed(2) +" km";
+      document.getElementById('eta-value').innerHTML = "ETA - TC: " + ((distance / speed) * 60).toFixed(0) +" min.";
 
       latRef.on('value', function(snapshot2) {
         var latValue = snapshot2.val();
@@ -192,7 +213,13 @@
         lngRef.on('value', function(snapshot3) {
             var lngValue = snapshot3.val();
             // Update the HTML element that displays the speed
-            jeep = L.marker([latValue, lngValue], {icon: jeepStop}).addTo(map);
+            if(jeep)
+           {
+             map.removeLayer(jeep);
+             map.removeLayer(jCircle);
+          }
+            jeep = L.marker([latValue, lngValue], {icon: userJeep}).addTo(map);
+            jCircle = L.circle([latValue, lngValue], { radius: 50, color: 'blue', opacity: 0.4 }).addTo(map);
           });
       });
 
