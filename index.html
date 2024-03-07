@@ -205,7 +205,7 @@
       circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
       var distance = (calculateDistance(marker.getLatLng().lat, marker.getLatLng().lng, 10.35197, 123.91389)/1000);
       document.getElementById('distance-value').innerHTML = "Distance: " + distance.toFixed(2) +" km";
-      document.getElementById('eta-value').innerHTML = "ETA - TC: " + ((distance / speed) * 60).toFixed(0) +" min.";
+      document.getElementById('eta-value').innerHTML = "ETA - TC: " + ((distance / speed) * 60).toFixed(1) +" min.";
 
       latRef.on('value', function(snapshot2) {
         var latValue = snapshot2.val();
