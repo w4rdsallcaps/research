@@ -258,7 +258,12 @@
         zoomed = map.fitBounds(circle.getBounds());
       }
     
-      map.setView([lat, lng]);
+      if (!zoomed) {
+        setTimeout(function() {
+          map.setView([lat, lng]);
+        }, 3000); // 3-second delay
+        zoomed = true; // Set zoomed to true to prevent further execution of setTimeout
+      }
     }
 
     function error(err) {
@@ -268,7 +273,7 @@
         alert("Cannot get current location");
       }
     }
-
+      
     setInterval(updateLocation, 1000);
 
     L.Control.geocoder().addTo(map);
