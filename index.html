@@ -62,11 +62,22 @@
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       grid-gap: 10px;
       justify-content: center;
+    
     }
 
+    .box {
+      width: 200px;
+      height: 50px;
+      border: 1px solid black;
+      padding: 10px;
+      text-align: center; /* Align text to center */
+  }
+  
     #map {
       height: 500px;
+      margin-top: 20px;
     }
+  
   </style>
 </head>
 
@@ -80,15 +91,21 @@
   <div class="container">
     <h2>Map User Location</h2>
     <div class="box">
-      <h2 id="distance-value"></h2>
+        <h2 id="distance-value"></h2>
     </div>
     <div class="box">
-      <H2 class="value" id="speed-value"></h2>
+        <h2 class="value" id="speed-value"></h2>
     </div>
     <div class="box">
-      <h2 id="eta-value"></h2>
+        <h2 id="eta-value"></h2>
     </div>
-  </div>
+    <div class="box"> 
+        <h2 class="value" id="Latitude-value"></h2>
+    </div>
+    <div class="box"> 
+        <h2 class="value" id="Longitude-value"></h2>
+    </div>
+</div>
 
   <div id="map"></div>
 
@@ -126,13 +143,23 @@
 
     var speed;
 
-    // Listen for changes in the speed data
-    speedRef.on('value', function(snapshot) {
-      var speedValue = snapshot.val();
-      // Update the HTML element that displays the speed
-      speed = speedValue;
-      document.getElementById('speed-value').innerHTML = "Speed: " + speed + " km/h";
-    });
+    // speed latitude longhitude display
+//    speedRef.on('value', function(snapshot) {
+//      var speedValue = snapshot.val();
+//    speed = speedValue;
+//      document.getElementById('speed-value').innerHTML = "Speed: " + speed + " km/h";
+//    });
+
+    latRef.on('value', function(snapshot) {
+      var latValue = snapshot.val();
+      document.getElementById('Latitude-value').innerHTML = "Lat: " + latValue;
+  });
+  
+  // Listen for changes in the longitude data
+  lngRef.on('value', function(snapshot) {
+      var lngValue = snapshot.val();
+      document.getElementById('Longitude-value').innerHTML = "Lng: " + lngValue;
+  });
 
     var map = L.map("map");
     map.setView([10.3123, 123.9023], 15);
@@ -188,45 +215,47 @@
       return d;
   }
 
-    function updateLocation() {
-      navigator.geolocation.getCurrentPosition(success, error);
+  function updateLocation() {
+    navigator.geolocation.getCurrentPosition(success, error);
+  }
+  
+  function success(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const accuracy = pos.coords.accuracy;
+    const speed = pos.coords.speed; // Get device's current speed
+  
+    if (marker) {
+      map.removeLayer(marker);
+      map.removeLayer(circle);
     }
-    function success(pos) {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      const accuracy = pos.coords.accuracy;
-
-      if (marker) {
-        map.removeLayer(marker);
-        map.removeLayer(circle);
-      }
-
-      marker = L.marker([lat, lng], {icon: user}).addTo(map);
-      circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
-      var distance = (calculateDistance(marker.getLatLng().lat, marker.getLatLng().lng, 10.35197, 123.91389)/1000);
-      document.getElementById('distance-value').innerHTML = "Distance: " + distance.toFixed(2) +" km";
-      document.getElementById('eta-value').innerHTML = "ETA - TC: " + ((distance / speed) * 60).toFixed(1) +" min.";
-
+  
+    marker = L.marker([lat, lng], {icon: user}).addTo(map);
+    circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
+    var distance = (calculateDistance(marker.getLatLng().lat, marker.getLatLng().lng, 10.35197, 123.91389)/1000);
+    document.getElementById('distance-value').innerHTML = "Distance: " + distance.toFixed(2) +" km";
+    document.getElementById('eta-value').innerHTML = "ETA - TC: " + ((distance / speed) * 60).toFixed(1) +" min.";
+    document.getElementById('speed-value').innerHTML = "Speed: " + speed + " m/s";
+  
       latRef.on('value', function(snapshot2) {
         var latValue = snapshot2.val();
         // Update the HTML element that displays the speed
         lngRef.on('value', function(snapshot3) {
-            var lngValue = snapshot3.val();
-            // Update the HTML element that displays the speed
-            if(jeep)
-           {
-             map.removeLayer(jeep);
-             map.removeLayer(jCircle);
+          var lngValue = snapshot3.val();
+          // Update the HTML element that displays the speed
+          if (jeep) {
+            map.removeLayer(jeep);
+            map.removeLayer(jCircle);
           }
-            jeep = L.marker([latValue, lngValue], {icon: userJeep}).addTo(map);
-            jCircle = L.circle([latValue, lngValue], { radius: 50, color: 'blue', opacity: 0.4 }).addTo(map);
-          });
+          jeep = L.marker([latValue, lngValue], { icon: userJeep }).addTo(map);
+          jCircle = L.circle([latValue, lngValue], { radius: 50, color: 'blue', opacity: 0.4 }).addTo(map);
+        });
       });
-
+    
       if (!zoomed) {
         zoomed = map.fitBounds(circle.getBounds());
       }
-
+    
       map.setView([lat, lng]);
     }
 
