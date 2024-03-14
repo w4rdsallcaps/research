@@ -2,41 +2,45 @@
 #include <ArduinoHttpClient.h>
 #include <Adafruit_SSD1306.h>
 #include <TinyGPS++.h>
+#include <FirebaseESP32.h>
+#include <addons/TokenHelper.h>
+#include <addons/RTDBHelper.h>
 
-// Your Firebase credentials
-const char FIREBASE_HOST[] = "https://researchgroup3-f1f0d-default-rtdb.asia-southeast1.firebasedatabase.app";
-const String FIREBASE_AUTH = "pT7IOiB2IrLmtlTMsYyX7AZzggc8Jyv418zdC8vn";
-const String FIREBASE_PATH = "/";
+
+const char * FIREBASE_HOST = "research3-95ab0-default-rtdb.asia-southeast1.firebasedatabase.app";
+const char * FIREBASE_AUTH = "XiIxxZKxK5jV7An71bmTnRf71fORdRkNkiXbjbAm";
+const String FIREBASE_PATH = "/"; 
 const int SSL_PORT = 443;
+//dont touch this pls :3
+const char* ssid = "Your wifi name";
+const char* password = "passwordbs";
+x
 
-// Your Wi-Fi credentials
-const char* ssid = "Montaus hotspot";
-const char* password = "akoangwifininoval26";
-
-// GPS Module pins
 #define RXD2 16
 #define TXD2 17
 HardwareSerial neogps(2);
 TinyGPSPlus gps;
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define SCREEN_WIDTH 128 
+#define SCREEN_HEIGHT 64 
 
-//On ESP32: GPIO-21(SDA), GPIO-22(SCL)
-#define OLED_RESET -1 //Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C //See datasheet for Address
+#define OLED_RESET -1 
+#define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// HTTP client setup
 WiFiClient wifiClient;
 HttpClient http_client = HttpClient(wifiClient, FIREBASE_HOST, SSL_PORT);
 
 unsigned long previousMillis = 0;
 long interval = 10000;
-boolean newData = false; // Declaration of newData variable
+boolean newData = false; 
+FirebaseData fbdo;
+FirebaseData fbdo2;
+FirebaseData fbdo3;
+FirebaseConfig config;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println("Initializing WiFi...");
   WiFi.begin(ssid, password);
 
@@ -54,61 +58,40 @@ void setup() {
 
   http_client.setHttpResponseTimeout(90 * 1000);
 
-  // Initialize OLED display
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;);
   }
-  delay(2000); // Pause for 2 seconds
-  display.clearDisplay(); // Clear the display
+
+  config.api_key = FIREBASE_AUTH;
+  config.database_url = FIREBASE_HOST;
+
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+  if(Firebase.ready()) {
+    Serial.println("Firebase is ready!");
+  }
+  delay(2000); 
+  display.clearDisplay(); 
 }
 
 void loop() {
-  http_client.connect(FIREBASE_HOST, SSL_PORT);
+  if (WiFi.status() == WL_CONNECTED) {
 
-  while (true) {
-    if (!http_client.connected()) {
-      Serial.println();
-      http_client.stop(); // Shutdown
-      Serial.println("HTTP not connect");
-      break;
+    if(!Firebase.ready()) {
+      Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+      delay(1000);
+    } else {
+      gps_loop(); 
     }
-    else {
-      gps_loop();
+
+  } else {
+    Serial.println("WiFi not connected. Reconnecting...");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
     }
-  }
-}
-
-void PostToFirebase(const char* method, const String & path , const String & data, HttpClient* http) {
-  String response;
-  int statusCode = 0;
-  http->connectionKeepAlive();
-
-  String url;
-  if (path[0] != '/') {
-    url = "/";
-  }
-  url += path + ".json";
-  url += "?auth=" + FIREBASE_AUTH;
-  Serial.print("POST:");
-  Serial.println(url);
-  Serial.print("Data:");
-  Serial.println(data);
-
-  String contentType = "application/json";
-  http->put(url, contentType, data);
-
-  statusCode = http->responseStatusCode();
-  Serial.print("Status code: ");
-  Serial.println(statusCode);
-  response = http->responseBody();
-  Serial.print("Response: ");
-  Serial.println(response);
-
-  if (!http->connected()) {
-    Serial.println();
-    http->stop(); // Shutdown
-    Serial.println("HTTP POST disconnected");
+    Serial.println("\nWiFi reconnected");
   }
 }
 
@@ -160,17 +143,13 @@ void print_speed()
     display.print("No Data");
     display.display();
   }  
-
 }
 
 void gps_loop() {
-  // No need to redeclare newData here
-  // boolean newData = false; // Remove this line
-  
+  newData = false;
   for (unsigned long start = millis(); millis() - start < 2000;) {
     while (neogps.available()) {
       if (gps.encode(neogps.read())) {
-        // You can directly use the newData variable declared in the loop() function
         newData = true;
         break;
       }
@@ -179,28 +158,34 @@ void gps_loop() {
 
   if (newData) {
     newData = false;
+    print_speed();
 
-    String latitude = String(gps.location.lat(), 6);
-    String longitude = String(gps.location.lng(), 6);
-    String speed = String(gps.speed.kmph(), 2); // Convert speed to kilometers per hour
+    char lat[20], lng[20], spd[20];
+    dtostrf(gps.location.lat(), 10, 6, lat);
+    dtostrf(gps.location.lng(), 10, 6, lng);
+    dtostrf(gps.speed.kmph(), 10, 6, spd);
+    const char * latitude = lat;
+    const char * longitude = lng;
+    const char * speed = spd;
 
     Serial.print("Latitude= ");
-    Serial.print(latitude);
+    Serial.println(latitude);
     Serial.print(" Longitude= ");
     Serial.print(longitude);
     Serial.print(" Speed= ");
     Serial.print(speed);
     Serial.println(" km/h");
 
-    String gpsData = "{";
-    gpsData += "\"lat\":" + latitude + ",";
-    gpsData += "\"lng\":" + longitude + ",";
-    gpsData += "\"speed\":" + speed + "";
-    gpsData += "}";
 
-    PostToFirebase("PATCH", FIREBASE_PATH, gpsData, &http_client);
-
-    // Display GPS data on OLED screen
-    print_speed();
+    Firebase.setString(fbdo, "/lat", latitude);
+    Firebase.setString(fbdo2, "/lng", longitude);
+    Firebase.setString(fbdo3, "/speed", speed);
+  } else {
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.setTextSize(3);
+    display.print("alfritz asa ka");
+    display.display();
   }
 }
